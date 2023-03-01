@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 # Solicita a URL da página do usuário
 url = input("Digite a URL da página: ")
 
+response = requests.get(url)
+
 # Solicita o termo que o usuário deseja buscar
 termo = input("Digite o termo que você deseja buscar: ")
 
@@ -15,11 +17,6 @@ texto = soup.get_text()
 # Exibe os 20 primeiros e os 20 últimos caracteres do texto
 print("Primeiros 20 caracteres: ", texto[:20])
 print("Últimos 20 caracteres: ", texto[-20:])
-
-
-# Faz a solicitação HTTP da página e armazena o conteúdo HTML em uma variável
-response = requests.get(url)
-html_content = response.content.decode('utf-8')
 
 
 
@@ -34,12 +31,4 @@ while True:
         print("Ocorrências encontradas:", ocorre)
     else:
         print(f"O termo '{termo}' não foi encontrado na página.")
-
-    
-
-
-
-
-
-response = requests.get(url)
 
