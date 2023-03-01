@@ -1,28 +1,14 @@
 import requests
-from bs4 import BeautifulSoup
 
-# URL da página a ser baixada
-url = "https://www.starplus.com/pt-br"
+# URL da imagem a ser baixada
+url = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fturbologo.com%2Fpt%2Fblog%2Fpremier-league-logo%2F&psig=AOvVaw2yo-CVFkM31p55r5ELowpr&ust=1677757853899000&source=images&cd=vfe&ved=0CBEQjhxqFwoTCMCSgYrVuv0CFQAAAAAdAAAAABAE"
 
-# Termo a ser buscado na página
-termo = "jogos"
+# Nome do arquivo local a ser salvo
+nome_arquivo = "imagem.jpg"
 
+# Faz o download da imagem
 response = requests.get(url)
 
-# Extrai o texto da página sem as tags
-soup = BeautifulSoup(response.content, "html.parser")
-texto = soup.get_text()
-
-# Exibe os 20 primeiros e os 20 últimos caracteres do texto
-print("Primeiros 20 caracteres: ", texto[:20])
-print("Últimos 20 caracteres: ", texto[-20:])
-
-ocorre = []
-posicao = -1
-while True:
-    posicao = texto.find(termo, posicao + 1)
-    if posicao == -1:
-        break
-    ocorre.append(posicao)
-
-print("Ocorrências encontradas:", ocorre)
+# Salva a imagem localmente
+with open(nome_arquivo, "exemplo") as arquivo:
+    arquivo.write(response.content)
