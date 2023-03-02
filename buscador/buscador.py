@@ -1,49 +1,86 @@
+import re
 import requests
+import requests_cache
 from bs4 import BeautifulSoup
+from requests.exceptions import InvalidSchema
+from urllib.parse import urljoin
 
-def search(keyword, url, depth):
-    # Lista para armazenar as URLs a serem visitadas
-    urls_to_visit = [url]
+requests_cache.install_cache("cache")
 
-    # Dicionário para armazenar as ocorrências da palavra-chave
-    keyword_occurrences = {}
 
-    # Loop para visitar as páginas de acordo com a profundidade especificada
-    for i in range(depth):
-        # Lista para armazenar as novas URLs descobertas nesta iteração
-        new_urls_to_visit = []
+class Page:
+    def __init__(self, url: str):
+        self.url = url
+        self.title = ""
+        self.links = []
+        self.foundedTerms = []
 
-        # Loop para visitar cada URL na lista atual de URLs a visitar
-        for url_to_visit in urls_to_visit:
-            try:
-                # Faz a solicitação HTTP da página e armazena o conteúdo HTML em uma variável
-                response = requests.get(url_to_visit)
-                html_content = response.content
+# key: value
+# url: Page
+visitedPages = {}
+referenceCount = {}
 
-                # Analisa o conteúdo HTML da página com a biblioteca Beautiful Soup
-                soup = BeautifulSoup(html_content, 'html.parser')
 
-                # Conta o número de ocorrências da palavra-chave na página e adiciona ao dicionário de ocorrências
-                keyword_count = str(soup).count(keyword)
-                if keyword_count > 0:
-                    keyword_occurrences[url_to_visit] = keyword_count
+def find(url: str, depth: int):
+    print(f"{depth} Acessando {url}...")
+    try:
+        response = requests.get(url)
+    except InvalidSchema as e:
+        return
 
-                # Encontra todas as tags <a> na página e adiciona as URLs a serem visitadas à lista de novas URLs a visitar
-                links = soup.find_all('a')
-                for link in links:
-                    new_url = link.get('href')
-                    if new_url not in new_urls_to_visit and new_url not in urls_to_visit:
-                        new_urls_to_visit.append(new_url)
-            except:
-                pass
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Define a lista de URLs a visitar para a lista de novas URLs a visitar descobertas nesta iteração
-        urls_to_visit = new_urls_to_visit
+    text = soup.get_text()
 
-    # Ordena o dicionário de ocorrências por ordem decrescente de número de ocorrências
-    keyword_occurrences = dict(sorted(keyword_occurrences.items(), key=lambda x: x[1], reverse=True))
+    regex = re.compile(r"([^\.]{0,50}" + query + r".{0,50})")
 
-    # Exibe as ocorrências da palavra-chave
-    print(f"Ocorrências da palavra-chave '{keyword}':")
-    for url, count in keyword_occurrences.items():
-        print(f"{url}: {count}")
+    resultList = regex.findall(text)
+
+    links = []
+    for tag in soup.find_all("a"):
+        link = tag.get("href")
+
+        if link == None or len(link) == 0:
+            continue
+        try:
+            links.append(urljoin(url, link))
+        except:
+            continue
+
+    currentPage = Page(url)
+    currentPage.title = soup.title.text if soup.title != None else "Sem titulo"
+    currentPage.foundedTerms = resultList
+    currentPage.links = links
+
+    if url not in visitedPages:
+        visitedPages[url] = currentPage
+
+    for link in currentPage.links:
+        if link in referenceCount:
+            referenceCount[link] += 1
+        else:
+            referenceCount[link] = 1
+
+        if depth > 0:
+            if link not in visitedPages:
+                find(link, depth - 1)
+
+query = "abril"
+find('https://pt.wikipedia.org/wiki/Campeonato_Mundial_de_H%C3%B3quei_no_Gelo_de_1982', 0)
+
+visitedPagesList = [v for k, v in visitedPages.items()]
+visitedPagesList = sorted(
+    visitedPagesList,
+    key=lambda x: len(x.foundedTerms),
+    reverse=True
+)
+visitedPagesList = list(
+    filter(lambda x: len(x.foundedTerms) > 0, visitedPagesList)
+)
+
+for page in visitedPagesList:
+    print()
+    print(page.url)
+    print(page.title)
+    print(page.foundedTerms[0])
+    #print(f"Referencias a página: {referenceCount.__init__[Page]}")
